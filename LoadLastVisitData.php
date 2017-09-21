@@ -11,7 +11,7 @@ class LoadLastVisitData extends AbstractExternalModule {
         if (isset($project_id)) {
             
             global $Proj, $lang;
-    
+
             // only valid for longitudinal projects
             if (!$Proj->longitudinal) return;
     
@@ -20,10 +20,10 @@ class LoadLastVisitData extends AbstractExternalModule {
                 // get status array for current record
                 $grid_form_status_temp = \Records::getFormStatus($project_id,array($record));
                 $grid_form_status = $grid_form_status_temp[$record];
-                
+
                 // $bLoadData => true if status for current form is empty
                 $bLoadData = false;
-                if (isset($grid_form_status[$event_id][$_GET['page']]) && strlen($grid_form_status[$event_id][$_GET['page']][$repeat_instance]) == 0) {
+                if (isset($grid_form_status[$event_id][$instrument]) && strlen($grid_form_status[$event_id][$instrument][$repeat_instance]) == 0) {
                     $bLoadData = true;
                 }
     
@@ -40,7 +40,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                     $aVisitFields[] = $this->getProjectSetting('visit_date');
                     foreach($Proj->metadata as $sField => $aTmp) {
                         // load all fields of current form
-                        if ($aTmp['form_name'] == $_GET['page']) {
+                        if ($aTmp['form_name'] == $instrument) {
                             // skip some fields that should be empty 
                             if (in_array($sField,$this->getProjectSetting('excluded_fields'))) continue;
                             $aVisitFields[] = $sField;
@@ -83,7 +83,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                             }                
                             
                             // load data if status of form matches the project setting
-                            if (in_array($aData[$_GET['page'].'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$_GET['page'].'_complete']) > 0) {
+                            if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
                                 $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
                                 unset($aData[$this->getProjectSetting('visit_date')]);
                                 unset($aData['redcap_event_name']);
@@ -106,7 +106,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                           }                
                           
                           // load data if status of form matches the project setting
-                          if (in_array($aData[$_GET['page'].'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$_GET['page'].'_complete']) > 0) {
+                          if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
                               $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
                               $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
                               unset($aData[$this->getProjectSetting('visit_date')]);
@@ -127,7 +127,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                             $aData2['redcap_repeat_instance'] = $repeat_instance;
                         }
                         // set status to project setting "save_status"
-                        $aData2[$_GET['page'].'_complete'] = $this->getProjectSetting('save_status');
+                        $aData2[$instrument.'_complete'] = $this->getProjectSetting('save_status');
                         $data = json_encode(array($aData2));
                         // save data
                         \REDCap::saveData($project_id, 'json', $data, 'overwrite', 'YMD', 'flat', $group_id, true);
