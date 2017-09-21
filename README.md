@@ -5,7 +5,7 @@ This module prefills empty instruments with data of the last visit. If repeating
 - [REDCap Modules](https://github.com/vanderbilt/redcap-external-modules)
 - Longitudinal project with a field containing the visit date
 - Instruments to be prefilled (and the visit date) must be assigned to longitudinal visits
-- The visit date for the current visit must already be entered before you can edit the insrument to be prefilled 
+- The visit date for the current visit must already be entered before you can edit the instrument to be prefilled 
 
 ## Installation
 - Clone this repo into to `<redcap-web-root>/modules/load_visit_data_v1.0`.
