@@ -1,0 +1,73 @@
+{
+	"name": "Prefill instruments with data of last visit",
+
+	"namespace": "HIH\\LoadLastVisitData",
+
+	"authors": [
+		{
+			"name": "Christian Erhardt",
+			"email": "christian.erhardt@uni-tuebingen.de",
+			"institution": "Hertie Institute for Clinical Brain Research, University Hospital Tuebingen"
+		}
+	],
+
+	"permissions": [
+		"hook_data_entry_form_top",
+		"select_data",
+		"update_data"
+	],
+
+	"description": "This module prefills empty instruments with data of the last visit. If repeating instances are enabled for these intruments, it prefills the instruments with data from the last instance of the current event.",
+
+	"project-settings": [
+		{
+			"key": "visit_date",
+			"name": "Field that contains visit date (with date validation type)",
+			"required": true,
+			"type": "field-list"
+		},
+		{
+			"key": "forms",
+			"name": "Instruments to be prefilled",
+			"required": true,
+			"repeatable": true,
+			"type": "form-list"
+		},
+		{
+			"key": "excluded_fields",
+			"name": "Fields to be excluded",
+			"required": false,
+			"repeatable": true,
+			"type": "field-list"
+		},
+		{
+			"key": "load_status",
+			"name": "Instruments with old visit data must have this status",
+			"required": true,
+			"repeatable": true,
+			"type": "dropdown",
+			"choices": [
+				{ "value": "0", "name": "Incomplete" },
+				{ "value": "1", "name": "Unverified" },
+				{ "value": "2", "name": "Complete" }
+			]
+		},
+		{
+			"key": "save_status",
+			"name": "Status for prefilled instrument",
+			"required": true,
+			"type": "dropdown",
+			"choices": [
+				{ "value": "0", "name": "Incomplete" },
+				{ "value": "1", "name": "Unverified" },
+				{ "value": "2", "name": "Complete" }
+			]
+		},
+		{
+			"key": "show_message",
+			"name": "Message above prefilled instrument",
+			"required": true,
+			"type": "text"
+		}
+	]
+}
