@@ -42,7 +42,7 @@
 		},
 		{
 			"key": "load_status",
-			"name": "Instruments with old visit data must have this status",
+			"name": "Instruments with old visit data must have this state",
 			"required": true,
 			"repeatable": true,
 			"type": "dropdown",
@@ -54,7 +54,7 @@
 		},
 		{
 			"key": "save_status",
-			"name": "Status for prefilled instrument",
+			"name": "State for prefilled instrument",
 			"required": true,
 			"type": "dropdown",
 			"choices": [
