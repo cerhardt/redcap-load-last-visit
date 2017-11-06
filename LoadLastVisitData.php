@@ -133,7 +133,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                         \REDCap::saveData($project_id, 'json', $data, 'overwrite', 'YMD', 'flat', $group_id, true);
                     
                         // show message that data was loaded from old visit
-                        print ('<br /><div class="red">'.$this->getProjectSetting('show_message').'<br />'.$aLastGoodDate.'</div><br />');     
+                        print ('<br /><div class="red">'.\REDCap::escapeHtml($this->getProjectSetting('show_message')).'<br />'.$aLastGoodDate.'</div><br />');     
                     }        
                 }
             }
