@@ -1,8 +1,9 @@
 # REDCap module to prefill an empty instrument
-This module prefills empty instruments with data of the last visit. If repeating instances are enabled for these intruments, it prefills the instruments with data from the last instance of the current event.
+This module prefills an empty instrument with data of the last visit. 
+If repeating instances are enabled for the intrument, it prefills the instrument with data from the last instance of the current event.
 
 ## Prerequisites
-- [REDCap Modules](https://github.com/vanderbilt/redcap-external-modules)
+- REDCap with external modules framework (>= v.8.0.0)
 - Longitudinal project with a field containing the visit date
 - Instruments to be prefilled (and the visit date) must be assigned to longitudinal visits
 - The visit date for the current visit must already be entered before you can edit the instrument to be prefilled 
