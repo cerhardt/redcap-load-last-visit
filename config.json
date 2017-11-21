@@ -1,5 +1,5 @@
 {
-	"name": "Prefill instruments with data of last visit",
+	"name": "Module to pre-populate an instrument with data from a previous event",
 
 	"namespace": "HIH\\LoadLastVisitData",
 
@@ -17,7 +17,7 @@
 		"update_data"
 	],
 
-	"description": "This module prefills empty instruments with data of the last visit. If repeating instances are enabled for these intruments, it prefills the instruments with data from the last instance of the current event.",
+	"description": "This module pre-populates one or more instruments in a longitudinal project with data from a previous event. It shows a message above the instrument that the user should review the old data and change it when necessary.",
 
 	"project-settings": [
 		{
@@ -28,7 +28,7 @@
 		},
 		{
 			"key": "forms",
-			"name": "Instruments to be prefilled",
+			"name": "Instruments to be pre-populated",
 			"required": true,
 			"repeatable": true,
 			"type": "form-list"
@@ -42,7 +42,7 @@
 		},
 		{
 			"key": "load_status",
-			"name": "Instruments with old visit data must have this state",
+			"name": "Load previous data only if intrument matches these states",
 			"required": true,
 			"repeatable": true,
 			"type": "dropdown",
@@ -54,7 +54,7 @@
 		},
 		{
 			"key": "save_status",
-			"name": "State for prefilled instrument",
+			"name": "State for pre-populated instrument",
 			"required": true,
 			"type": "dropdown",
 			"choices": [
@@ -65,7 +65,7 @@
 		},
 		{
 			"key": "show_message",
-			"name": "Message above prefilled instrument",
+			"name": "Message above pre-populated instrument",
 			"required": true,
 			"type": "text"
 		}
