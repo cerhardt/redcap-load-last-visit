@@ -10,11 +10,16 @@ class LoadLastVisitData extends AbstractExternalModule {
 
         if (isset($project_id)) {
             
-            global $Proj, $lang;
+            global $Proj, $lang, $user_rights;
 
             // only valid for longitudinal projects
             if (!$Proj->longitudinal) return;
     
+            // load data only if user has edit permission for instrument
+            if ($user_rights['forms'][$instrument] != '1') {
+                return;
+            }
+            
             if (in_array($instrument,$this->getProjectSetting('forms'))) {
     		
                 // get status array for current record
@@ -26,11 +31,11 @@ class LoadLastVisitData extends AbstractExternalModule {
                 if (isset($grid_form_status[$event_id][$instrument]) && strlen($grid_form_status[$event_id][$instrument][$repeat_instance]) == 0) {
                     $bLoadData = true;
                 }
-    
+
                 // load data only if status is empty
                 if ($bLoadData) {
                     $val_type = $Proj->metadata[$this->getProjectSetting('visit_date')]['element_validation_type'];
-                    if (substr($val_type, 0, 5) !== 'date_') return;
+                    if (substr($val_type, 0, 4) !== 'date') return;
                     
                     //  all fields to load
                     $aVisitFields = array();
@@ -48,13 +53,17 @@ class LoadLastVisitData extends AbstractExternalModule {
                     }
                     // get event name by event_id
                     $sEventName = \Event::getEventNameById(intval($project_id), $event_id);
-                    
+
                     // load all events for the current record
                     $aDataDiag = json_decode(\REDCap::getData($project_id, 'json', $record, $aVisitFields, null, null, false, false, false, false, false, false, false, false, false, array($this->getProjectSetting('visit_date') => 'ASC')),true);
-                    
+
                     // assign events to visit dates
                     $aEventNameDate = array();
                     foreach($aDataDiag as $aTmp) {
+                        // return if visit date for current event is empty
+                        if ($aTmp['redcap_event_name'] == $sEventName && strlen($aTmp[$this->getProjectSetting('visit_date')]) == 0) {
+                            return;
+                        }
                         if (strlen($aTmp[$this->getProjectSetting('visit_date')]) > 0) {
                             $aEventNameDate[$aTmp['redcap_event_name']] = $aTmp[$this->getProjectSetting('visit_date')];
                         }
@@ -71,7 +80,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                     }
                     // sort by date (ascending)
                     ksort($aDataDiagNew, SORT_STRING);
-                    
+
                     // array contains last filled in data
                     $aLastGood = array();
                     foreach($aDataDiagNew as $aVisit) {
