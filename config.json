@@ -1,5 +1,5 @@
 {
-	"name": "Module to pre-populate an instrument with data from a previous event",
+	"name": "Module to pre-populate an instrument with data from a previous event / instance",
 
 	"namespace": "HIH\\LoadLastVisitData",
 
@@ -17,13 +17,13 @@
 		"update_data"
 	],
 
-	"description": "This module pre-populates one or more instruments in a longitudinal project with data from a previous event. It shows a message above the instrument that the user should review the old data and change it when necessary.",
+	"description": "This module pre-populates one or more instruments with data from a previous event / instance.<br />In a longitudinal project instruments will be pre-populated with data from the most current event data. In a classic project instruments will be pre-populated with data from the last instance (if repeating instances for the instruments are enabled). More detailed instructions are on the <a target=\"_blank\" style=\"text-decoration:underline;\" href=\"https://github.com/cerhardt/redcap-load-last-visit\">github page</a>",
 
 	"project-settings": [
 		{
 			"key": "visit_date",
-			"name": "Field that contains visit date (with date validation type)",
-			"required": true,
+			"name": "Field that contains visit date (with date validation type) (only necessary for longitudinal projects)",
+			"required": false,
 			"type": "field-list"
 		},
 		{

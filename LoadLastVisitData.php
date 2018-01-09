@@ -13,7 +13,7 @@ class LoadLastVisitData extends AbstractExternalModule {
             global $Proj, $lang, $user_rights;
 
             // only valid for longitudinal projects
-            if (!$Proj->longitudinal) return;
+            //if (!$Proj->longitudinal) return;
     
             // load data only if user has edit permission for instrument
             if ($user_rights['forms'][$instrument] != '1') {
@@ -34,15 +34,19 @@ class LoadLastVisitData extends AbstractExternalModule {
 
                 // load data only if status is empty
                 if ($bLoadData) {
-                    $val_type = $Proj->metadata[$this->getProjectSetting('visit_date')]['element_validation_type'];
-                    if (substr($val_type, 0, 4) !== 'date') return;
-                    
+                    if ($Proj->longitudinal) {
+                        $val_type = $Proj->metadata[$this->getProjectSetting('visit_date')]['element_validation_type'];
+                        if (substr($val_type, 0, 4) !== 'date') return;
+                    }
+                                        
                     //  all fields to load
                     $aVisitFields = array();
                     // record_id
                     $aVisitFields[] = \REDCap::getRecordIdField();
                     // date field
-                    $aVisitFields[] = $this->getProjectSetting('visit_date');
+                    if ($Proj->longitudinal) {
+                        $aVisitFields[] = $this->getProjectSetting('visit_date');
+                    }
                     foreach($Proj->metadata as $sField => $aTmp) {
                         // load all fields of current form
                         if ($aTmp['form_name'] == $instrument) {
@@ -53,76 +57,98 @@ class LoadLastVisitData extends AbstractExternalModule {
                     }
                     // get event name by event_id
                     $sEventName = \Event::getEventNameById(intval($project_id), $event_id);
-
-                    // load all events for the current record
-                    $aDataDiag = json_decode(\REDCap::getData($project_id, 'json', $record, $aVisitFields, null, null, false, false, false, false, false, false, false, false, false, array($this->getProjectSetting('visit_date') => 'ASC')),true);
-
-                    // assign events to visit dates
-                    $aEventNameDate = array();
-                    foreach($aDataDiag as $aTmp) {
-                        // return if visit date for current event is empty
-                        if ($aTmp['redcap_event_name'] == $sEventName && strlen($aTmp[$this->getProjectSetting('visit_date')]) == 0) {
-                            return;
-                        }
-                        if (strlen($aTmp[$this->getProjectSetting('visit_date')]) > 0) {
-                            $aEventNameDate[$aTmp['redcap_event_name']] = $aTmp[$this->getProjectSetting('visit_date')];
-                        }
-                    }
-                    // create new array with visits and fill in empty visit_date (necessary for forms with repeating instances because visit_date will be empty for repeating instance)
-                    $aDataDiagNew = array();
-                    foreach($aDataDiag as $aTmp) {
-                        // skip visits with empty date
-                        if (strlen($aEventNameDate[$aTmp['redcap_event_name']]) == 0) continue;
-                        if (strlen($aTmp[$this->getProjectSetting('visit_date')]) == 0) {
-                            $aTmp[$this->getProjectSetting('visit_date')] = $aEventNameDate[$aTmp['redcap_event_name']];
-                        }
-                        $aDataDiagNew[$aEventNameDate[$aTmp['redcap_event_name']]][] = $aTmp;
-                    }
-                    // sort by date (ascending)
-                    ksort($aDataDiagNew, SORT_STRING);
-
                     // array contains last filled in data
                     $aLastGood = array();
-                    foreach($aDataDiagNew as $aVisit) {
-                        foreach($aVisit as $aData) {
-                    
-                            // break if current event is reached
+
+                    // load all events for the current record
+                    if ($Proj->longitudinal) {
+                        $aDataDiag = json_decode(\REDCap::getData($project_id, 'json', $record, $aVisitFields, null, null, false, false, false, false, false, false, false, false, false, array($this->getProjectSetting('visit_date') => 'ASC')),true);
+
+                        // assign events to visit dates
+                        $aEventNameDate = array();
+                        foreach($aDataDiag as $aTmp) {
+                            if (strlen($aTmp[$this->getProjectSetting('visit_date')]) > 0) {
+                                $aEventNameDate[$aTmp['redcap_event_name']] = $aTmp[$this->getProjectSetting('visit_date')];
+                            }
+                        }
+                        // create new array with visits and fill in empty visit_date (necessary for forms with repeating instances because visit_date will be empty for repeating instance)
+                        $aDataDiagNew = array();
+                        foreach($aDataDiag as $aTmp) {
+                            // skip visits with empty date
+                            if (strlen($aEventNameDate[$aTmp['redcap_event_name']]) == 0) continue;
+                            if (strlen($aTmp[$this->getProjectSetting('visit_date')]) == 0) {
+                                $aTmp[$this->getProjectSetting('visit_date')] = $aEventNameDate[$aTmp['redcap_event_name']];
+                            }
+                            $aDataDiagNew[$aEventNameDate[$aTmp['redcap_event_name']]][] = $aTmp;
+                        }
+                        // sort by date (ascending)
+                        ksort($aDataDiagNew, SORT_STRING);
+    
+                        foreach($aDataDiagNew as $aVisit) {
+                            foreach($aVisit as $aData) {
+                        
+                                // break if current event is reached
+                                if ($aData['redcap_event_name'] == $sEventName) {
+                                    break;
+                                }                
+                                
+                                // load data if status of form matches the project setting
+                                if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
+                                    $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
+                                    unset($aData[$this->getProjectSetting('visit_date')]);
+                                    unset($aData['redcap_event_name']);
+                                    $aLastGood = $aData;
+                                }
+                            }
+                            // break outer loop if current event is reached
                             if ($aData['redcap_event_name'] == $sEventName) {
+                                break;
+                            }                
+                        }
+
+                        // special case: if repeating instances are active for current form and data exists for current form
+                        // => load data of last instance of current form
+                        if (isset($aData['redcap_repeat_instance']) && $aData['redcap_event_name'] == $sEventName) {
+                          foreach($aVisit as $aData) {
+                              // break if current instance is reached
+                              if ($aData['redcap_repeat_instance'] >= $repeat_instance || strlen($aData['redcap_repeat_instance']) == 0) {
+                                  break;
+                              }                
+                              
+                              // load data if status of form matches the project setting
+                              if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
+                                  $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
+                                  $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
+                                  unset($aData[$this->getProjectSetting('visit_date')]);
+                                  unset($aData['redcap_event_name']);
+                                  $aLastGood = $aData;
+                              }
+                          }
+                        }
+
+                    } else {
+                        $aDataDiag = json_decode(\REDCap::getData($project_id, 'json', $record, $aVisitFields),true);
+                        $aVisit = array();
+                        foreach($aDataDiag as $aTmp) {
+                            if (strlen($aTmp['redcap_repeat_instance']) > 0) {
+                                $aVisit[$aTmp['redcap_repeat_instance']] = $aTmp;
+                            }
+                        }
+                        // sort by date (ascending)
+                        ksort($aVisit, SORT_NUMERIC);
+
+                        foreach($aVisit as $aData) {
+                            // break if current instance is reached
+                            if ($aData['redcap_repeat_instance'] >= $repeat_instance || strlen($aData['redcap_repeat_instance']) == 0) {
                                 break;
                             }                
                             
                             // load data if status of form matches the project setting
                             if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
-                                $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
-                                unset($aData[$this->getProjectSetting('visit_date')]);
-                                unset($aData['redcap_event_name']);
+                                $aLastGoodDate = ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
                                 $aLastGood = $aData;
                             }
                         }
-                        // break outer loop if current event is reached
-                        if ($aData['redcap_event_name'] == $sEventName) {
-                            break;
-                        }                
-                    }
-                    
-                    // special case: if repeating instances are active for current form and data exists for current form
-                    // => load data of last instance of current form
-                    if (isset($aData['redcap_repeat_instance']) && $aData['redcap_event_name'] == $sEventName) {
-                      foreach($aVisit as $aData) {
-                          // break if current instance is reached
-                          if ($aData['redcap_repeat_instance'] >= $repeat_instance || strlen($aData['redcap_repeat_instance']) == 0) {
-                              break;
-                          }                
-                          
-                          // load data if status of form matches the project setting
-                          if (in_array($aData[$instrument.'_complete'],$this->getProjectSetting('load_status')) && strlen($aData[$instrument.'_complete']) > 0) {
-                              $aLastGoodDate = \DateTimeRC::datetimeConvert($aData[$this->getProjectSetting('visit_date')], 'ymd', substr($val_type, -3));
-                              $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
-                              unset($aData[$this->getProjectSetting('visit_date')]);
-                              unset($aData['redcap_event_name']);
-                              $aLastGood = $aData;
-                          }
-                      }
                     }
                     
                     // save data if array is filled with old data
@@ -130,7 +156,9 @@ class LoadLastVisitData extends AbstractExternalModule {
                     
                         $aData2 = $aLastGood;
                         $aData2[\REDCap::getRecordIdField()] = $record;
-                        $aData2['redcap_event_name'] = $sEventName; 
+                        if ($Proj->longitudinal) {
+                            $aData2['redcap_event_name'] = $sEventName; 
+                        }
                         // add instance field if form has repeating instances
                         if (isset($aData2['redcap_repeat_instance'])) {
                             $aData2['redcap_repeat_instance'] = $repeat_instance;
