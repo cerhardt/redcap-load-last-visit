@@ -14,9 +14,9 @@ class LoadLastVisitData extends AbstractExternalModule {
 
             // only valid for longitudinal projects
             //if (!$Proj->longitudinal) return;
-    
-            // load data only if user has edit permission for instrument
-            if ($user_rights['forms'][$instrument] != '1') {
+
+            // load data only if user has edit permission for instrument / survey
+            if ($user_rights['forms'][$instrument] != '1' && $user_rights['forms'][$instrument] != '3') {
                 return;
             }
             
