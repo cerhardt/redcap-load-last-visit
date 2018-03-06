@@ -1,12 +1,10 @@
 # REDCap module to pre-populate an instrument with data from a previous event / instance
-This module pre-populates one or more instruments with data from a previous event / instance.
-When an instrument with empty status (i.e. no data) is called, the module loads all previous event / instance data of this instrument.
+When an empty instrument is displayed the module loads all previous event / instance data of this instrument.
 It will pre-populate the instrument with the most current event / instance data and shows a message above the instrument that the user should review the data and change it when necessary.   
 
 There are two different modes:
 In a longitudinal project instruments will be pre-populated with data from the most current event data.
 In a classic project instruments will be pre-populated with data from the last instance.
-
 
 Caution: Previous data is copied to the current event before you save the instrument. So, if you cancel the data entry of the instrument, the previous data is still there!
  
@@ -20,7 +18,6 @@ Caution: Previous data is copied to the current event before you save the instru
 - Classic project:
   - Instruments to be pre-populated must be configured as repeatable instruments  
 
-
 ## Installation
 - Go to **Control Center > External Modules** and download the module from the repository
 - Enable the module
@@ -32,3 +29,15 @@ Caution: Previous data is copied to the current event before you save the instru
 - Select one ore more states that previous data must match (e.g. if you want to load previous data only if the instrument is "complete", then choose "complete") (required)
 - Select state for pre-populated instrument (required)
 - Type message that appears above prefilled instrument (e.g. a warning that the data was copied) (required)
+
+## Example (longitudinal project)
+
+| Event | Visit Date | State |
+| --- | --- | --- |
+| 01 | 2015-01-01 | Completed |
+| 02 | 2017-01-01 | Completed |
+| 03 | 2016-01-01 | Incomplete |
+| 04 | 2018-01-01 |  |
+
+- Configuration: 
+  -Instrument must be "completed" => instrument of event "04" will be pre-populated with data from event "02", because this is the most current event data with "completed" state. 
