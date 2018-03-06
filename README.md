@@ -35,7 +35,7 @@ Caution: Previous data is copied to the current event before you save the instru
 | --- | --- | --- |
 | 01 | 2015-01-01 | Completed |
 | 02 | 2017-01-01 | Completed |
-| 03 | 2016-01-01 | Incomplete |
+| 03 | 2016-01-01 | Completed |
 | 04 | 2018-01-01 |  |
 
 - Configuration: 
