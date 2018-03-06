@@ -1,6 +1,5 @@
 # REDCap module to pre-populate an instrument with data from a previous event / instance
-When an empty instrument is displayed the module loads all previous event / instance data of this instrument.
-It will pre-populate the instrument with the most current event / instance data and shows a message above the instrument that the user should review the data and change it when necessary.   
+When an empty instrument is displayed the module loads all previous event / instance data of this instrument and shows a message above the instrument that the user should review the data and change it when necessary.   
 
 There are two different modes:
 In a longitudinal project instruments will be pre-populated with data from the most current event data.
@@ -40,4 +39,4 @@ Caution: Previous data is copied to the current event before you save the instru
 | 04 | 2018-01-01 |  |
 
 - Configuration: 
-  -Instrument must be "completed" => instrument of event "04" will be pre-populated with data from event "02", because this is the most current event data with "completed" state. 
+  - Instrument must be "completed" => instrument of event "04" will be pre-populated with data from event "02", because this is the most current event data with "completed" state. 
