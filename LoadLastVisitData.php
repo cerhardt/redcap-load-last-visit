@@ -16,6 +16,12 @@ class LoadLastVisitData extends AbstractExternalModule {
             
             global $Proj, $lang, $user_rights;
 
+            if (empty($record)) {
+                $record = $_GET['id'];
+            }
+            if (empty($record)) {
+                return;
+            }               
             // load data only if user has edit permission for instrument / survey
             if ($user_rights['forms'][$instrument] != '1' && $user_rights['forms'][$instrument] != '3') {
                 return;
@@ -72,8 +78,13 @@ class LoadLastVisitData extends AbstractExternalModule {
 
                     // load all events for the current record
                     if ($Proj->longitudinal) {
+
                         $aDataDiag = json_decode(REDCap::getData($project_id, 'json', $record, $aVisitFields, null, null, false, false, false, false, false, false, false, false, false, array($aModConfig['visit_date'] => 'ASC')),true);
 
+                        // return if record is empty
+                        if (count($aDataDiag) == 0) {
+                            return;
+                        }
                         // assign events to visit dates
                         $aEventNameDate = array();
                         foreach($aDataDiag as $aTmp) {
