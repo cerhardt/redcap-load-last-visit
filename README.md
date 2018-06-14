@@ -2,10 +2,15 @@
 When an empty instrument is displayed the module loads all previous event / instance data of this instrument. It shows a message above the instrument that the user should review the data and change it when necessary.   
 
 There are two different modes:
-In a longitudinal project instruments will be pre-populated with data from the most current event data.
+In a longitudinal project instruments will be pre-populated with data from the most current event data. If the instrument is repeating in the current event, a new instance of this instrument will be pre-populated with data from the last instance.
 In a classic project instruments will be pre-populated with data from the last instance.
 
-Caution: Previous data is copied to the current event before you save the instrument. So, if you cancel the data entry of the instrument, the previous data is still there!
+New features in v2.0:
+- override global settings per instrument
+- define custom filters for events/instances to be loaded. 
+- limit the scope of previous events/instances to all events/instances or just the last one.
+
+Caution: Previous data is copied to the current event before you save the instrument. If you cancel the data entry of the instrument, the previous data is still there!
  
 ## Prerequisites
 - REDCap with external modules framework (>= v.8.0.0)
@@ -22,14 +27,23 @@ Caution: Previous data is copied to the current event before you save the instru
 - Enable the module
 - For each project you want to use this module, go to the project home page, click on **External Modules** link, and then enable the module for that project.
 
-## Configuration
+## Configuration (since v2.0)
 - Select field that contains visit date (with date or datetime validation type) (only necessary for longitudinal projects)
-- Select instruments to be pre-populated (required)
-- Select one ore more states that previous data must match (e.g. if you want to load previous data only if the instrument is "complete", then choose "complete") (required)
-- Select state for pre-populated instrument (required)
-- Type message that appears above prefilled instrument (e.g. a warning that the data was copied) (required)
+- Global settings: these settings are global defaults and can be overwritten by an instrument setting
+  -  Fields to be excluded (only global)
+  -  Select one or more states for earlier data (e.g. if you want to load previous data only if the instrument is "complete", then choose "complete") 
+  -  Select the scope of previous events/instances (all / just the last one) (required)
+  -  Select state for pre-populated instruments 
+  -  Type message that appears above prefilled instrument (e.g. a warning that the data was copied) (required)
+- Add instruments and instrument settings:
+  -  Select instrument to be pre-populated (required)
+  -  Option 1: Select one or more states for earlier data if you want to override the global setting 
+  -  Option 2: Type a custom filter (same syntax like branching logic)  
+  -  Select the scope of previous events/instances if you want to override the global setting
+  -  Select state for pre-populated instruments if you want to override the global setting
 
-## Example (longitudinal project)
+
+## Example 1 (longitudinal project)
 
 | Event | Visit Date | State |
 | --- | --- | --- |
@@ -39,4 +53,17 @@ Caution: Previous data is copied to the current event before you save the instru
 | 04 | 2018-01-01 |  |
 
 - Configuration: 
-  - Instrument must be "completed" => instrument of event "04" will be pre-populated with data from event "02", because this is the most current event data with "completed" state. 
+  - Instrument must be "completed" => instrument of event "04" will be pre-populated with data from event "02", because this is the most current event data with "completed" state.
+  
+## Example 2 (classic project)
+
+| Instance | User | Prepopulate |
+| --- | --- | --- |
+| 01 | joe | 1 |
+| 02 | paul | 0 |
+| 03 |  |  |
+
+- Configuration: 
+   - custom filter [user] = [user-name] and scope is set to "all": instance "03" will be pre-populated with data from instance "01" if the logged in user is "joe"
+   - custom filter [prepopulate] = "1" and scope is set to "all": instance "03" will be pre-populated with data from instance "01"
+   - custom filter [prepopulate] = "1" and scope is set to "just the last one": instance "03" will not be pre-populated because instance "02" doesn't match the custom filter

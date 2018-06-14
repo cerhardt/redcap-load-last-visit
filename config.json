@@ -7,7 +7,7 @@
 		{
 			"name": "Christian Erhardt",
 			"email": "christian.erhardt@uni-tuebingen.de",
-			"institution": "Hertie Institute for Clinical Brain Research, University Hospital Tuebingen"
+			"institution": "Hertie Institute for Clinical Brain Research, University Hospital Tübingen"
 		}
 	],
 
@@ -17,33 +17,26 @@
 		"update_data"
 	],
 
-	"description": "This module pre-populates one or more instruments with data from a previous event / instance.<br />In a longitudinal project instruments will be pre-populated with data from the most current event data. In a classic project instruments will be pre-populated with data from the last instance (if repeating instances for the instruments are enabled). More detailed instructions are on the <a target=\"_blank\" style=\"text-decoration:underline;\" href=\"https://github.com/cerhardt/redcap-load-last-visit\">github page</a>",
+	"description": "This module pre-populates one or more instruments with data from a previous event/instance.<br />In a longitudinal project instruments will be pre-populated with data from the most current event data. In a classic project instruments will be pre-populated with data from the last instance (if repeating instances for the instruments are enabled). More detailed instructions are on the <a target=\"_blank\" style=\"text-decoration:underline;\" href=\"https://github.com/cerhardt/redcap-load-last-visit\">github page</a>",
 
 	"project-settings": [
 		{
 			"key": "visit_date",
-			"name": "Field that contains visit date (with date validation type) (only necessary for longitudinal projects)",
+			"name": "Global: field that contains visit date (with date validation type) (only necessary for longitudinal projects)",
 			"required": false,
 			"type": "field-list"
 		},
 		{
-			"key": "forms",
-			"name": "Instruments to be pre-populated",
-			"required": true,
-			"repeatable": true,
-			"type": "form-list"
-		},
-		{
 			"key": "excluded_fields",
-			"name": "Fields to be excluded",
+			"name": "Global: fields to be excluded",
 			"required": false,
 			"repeatable": true,
 			"type": "field-list"
 		},
 		{
 			"key": "load_status",
-			"name": "Load previous data only if intrument matches these states",
-			"required": true,
+			"name": "Global: load previous data only if event/instance matches these states",
+			"required": false,
 			"repeatable": true,
 			"type": "dropdown",
 			"choices": [
@@ -53,9 +46,19 @@
 			]
 		},
 		{
-			"key": "save_status",
-			"name": "State for pre-populated instrument",
+			"key": "load_all_events",
+			"name": "Global: load all previous events/instances or just the last one",
 			"required": true,
+			"type": "dropdown",
+			"choices": [
+				{ "value": "1", "name": "all previous events/instances" },
+				{ "value": "0", "name": "just the last one" }
+			]
+		},
+		{
+			"key": "save_status",
+			"name": "Global: state for pre-populated instruments",
+			"required": false,
 			"type": "dropdown",
 			"choices": [
 				{ "value": "0", "name": "Incomplete" },
@@ -65,9 +68,63 @@
 		},
 		{
 			"key": "show_message",
-			"name": "Message above pre-populated instrument",
+			"name": "Global: message above pre-populated instruments",
 			"required": true,
 			"type": "text"
-		}
+		},
+		{
+			"key": "forms_list",
+			"name": "Instrument to be pre-populated",
+			"required": true,
+			"repeatable": true,
+			"type": "sub_settings",
+      "sub_settings":[
+          {
+             "key": "form",
+             "name": "Instrument",
+             "required": true,
+             "type": "form-list"
+          },
+          {
+             "key": "load_status_form",
+        			"name": "Instrument: option 1: load previous data only if event/instance matches these states",
+        			"required": false,
+        			"repeatable": true,
+        			"type": "dropdown",
+        			"choices": [
+        				{ "value": "0", "name": "Incomplete" },
+        				{ "value": "1", "name": "Unverified" },
+        				{ "value": "2", "name": "Complete" }
+        			]
+          },
+      		{
+      			"key": "form_logic",
+      			"name": "Instrument: option 2: advanced instrument logic",
+      			"required": false,
+      			"type": "text"
+      		},
+      		{
+      			"key": "load_all_events_form",
+      			"name": "Instrument: load all previous events/instances or just the last one",
+      			"required": false,
+      			"type": "dropdown",
+      			"choices": [
+      				{ "value": "1", "name": "all previous events/instances" },
+      				{ "value": "0", "name": "just the last one" }
+      			]
+      		},
+      		{
+      			"key": "save_status_form",
+      			"name": "Instrument: state for pre-populated instrument",
+      			"required": false,
+      			"type": "dropdown",
+      			"choices": [
+      				{ "value": "0", "name": "Incomplete" },
+      				{ "value": "1", "name": "Unverified" },
+      				{ "value": "2", "name": "Complete" }
+      			]
+      		}
+       ]
+    }
 	]
 }

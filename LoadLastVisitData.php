@@ -34,7 +34,16 @@ class LoadLastVisitData extends AbstractExternalModule {
                 $aModConfig[$sKey] = $aTmp['value'];
             }
 
-            if (in_array($instrument,$aModConfig['forms'])) {
+            // backward compatibility < v2
+            $aFormsToPreload = $aModConfig['form'];
+            $bNewConfig = true;
+            $bLoadAllPreviousEvents = true;
+            if ((!isset($aModConfig['form'][0]) || strlen($aModConfig['form'][0]) == 0) && count($aModConfig['forms']) > 0) {
+                $aFormsToPreload = $aModConfig['forms'];
+                $bNewConfig = false;
+            }
+            
+            if (in_array($instrument,$aFormsToPreload)) {
     		
                 // get status array for current record
                 $grid_form_status_temp = Records::getFormStatus($project_id,array($record));
@@ -48,6 +57,42 @@ class LoadLastVisitData extends AbstractExternalModule {
 
                 // load data only if status is empty
                 if ($bLoadData) {
+                    $iEventId = $event_id;
+        
+                    // get settings for instrument
+                    if ($bNewConfig) {
+                        foreach($aFormsToPreload as $iFormIdx => $sForm) {
+                            if ($sForm == $instrument) {
+                                if (strlen($aModConfig['form_logic'][$iFormIdx]) > 0) {
+                                    $bLogic = true;
+                                    $sLogic = $aModConfig['form_logic'][$iFormIdx];
+                                } else {
+                                    $bLogic = false;
+                                    if (strlen($aModConfig['load_status_form'][$iFormIdx][0]) > 0) {
+                                        $aLoadStatus = $aModConfig['load_status_form'][$iFormIdx];
+                                    } elseif (isset($aModConfig['load_status'])) {
+                                        $aLoadStatus = $aModConfig['load_status'];
+                                    }
+                                }
+                                if (strlen($aModConfig['load_all_events_form'][$iFormIdx][0]) > 0) {
+                                    $bLoadAllPreviousEvents = $aModConfig['load_all_events_form'][$iFormIdx];
+                                } elseif (isset($aModConfig['load_all_events'])) {
+                                    $bLoadAllPreviousEvents = $aModConfig['load_all_events'];
+                                } 
+                                if (strlen($aModConfig['save_status_form'][$iFormIdx]) > 0) {
+                                    $iSaveStatus = $aModConfig['save_status_form'][$iFormIdx];
+                                } elseif (isset($aModConfig['save_status'])) { 
+                                    $iSaveStatus = $aModConfig['save_status'];
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        $bLogic = false;
+                        $aLoadStatus = $aModConfig['load_status'];
+                        $iSaveStatus = $aModConfig['save_status'];
+                    }                
+                    
                     if ($Proj->longitudinal) {
                         $val_type = $Proj->metadata[$aModConfig['visit_date']]['element_validation_type'];
                         if (substr($val_type, 0, 4) !== 'date') return;
@@ -65,17 +110,18 @@ class LoadLastVisitData extends AbstractExternalModule {
                     $aInstrumentFields = REDCap::getFieldNames($instrument);
 
                     foreach($aInstrumentFields as $sField) {
-                            // skip some fields that should be empty 
-                            if (in_array($sField,$aModConfig['excluded_fields'])) continue;
-                            $aVisitFields[] = $sField;
+                        // skip some fields that should be empty 
+                        if (in_array($sField,$aModConfig['excluded_fields'])) continue;
+                        $aVisitFields[] = $sField;
                     }
 
                     // get event name by event_id
-                    $sEventName = REDCap::getEventNames(true, true, $event_id);
+                    $sEventName = REDCap::getEventNames(true, true, $iEventId);
 
                     // array contains last filled in data
                     $aLastGood = array();
-
+                    $aRepeatingInstancesData = array();
+                    
                     // load all events for the current record
                     if ($Proj->longitudinal) {
 
@@ -102,20 +148,67 @@ class LoadLastVisitData extends AbstractExternalModule {
                             }
                             $aDataDiagNew[$aEventNameDate[$aTmp['redcap_event_name']]][] = $aTmp;
                         }
+                        unset($aDataDiag);
                         // sort by date (ascending)
                         ksort($aDataDiagNew, SORT_STRING);
 
-                        foreach($aDataDiagNew as $aVisit) {
+                        // cut off future events 
+                        $aPreviousEvents = array();
+                        foreach($aDataDiagNew as $sVisitDate => $aVisit) {
                             foreach($aVisit as $aData) {
-                        
+                                $aPreviousEvents[$sVisitDate][] = $aData;
+                                // if there is a repeating instance with data, load the data from the current event
+                                if (strlen($aData['redcap_repeat_instance']) > 0) {
+                                    $sLastEvent = $aData['redcap_event_name'];
+                                }
+                            }
+                            // break if current event is reached
+                            if ($aData['redcap_event_name'] == $sEventName) {
+                                break;
+                            }                
+                            $sLastEvent = $aData['redcap_event_name'];
+                        }
+                        unset($aDataDiagNew);
+                        $aPreviousEvents2 = array();
+                        // extract the last event
+                        if (!$bLoadAllPreviousEvents) {
+                            foreach($aPreviousEvents as $sVisitDate => $aVisit) {
+                                foreach($aVisit as $aData) {
+                                    if ($aData['redcap_event_name'] == $sLastEvent) {
+                                        $aPreviousEvents2[$sVisitDate][] = $aData;
+                                    }
+                                }
+                            }
+                        } else {
+                            $aPreviousEvents2 = $aPreviousEvents;
+                        }
+                        unset($aPreviousEvents);
+
+                        foreach($aPreviousEvents2 as $sVisitDate => $aVisit) {
+                            foreach($aVisit as $aData) {
+                                $iEventId = REDCap::getEventIdFromUniqueEvent($aData['redcap_event_name']);
+
                                 // break if current event is reached
                                 if ($aData['redcap_event_name'] == $sEventName) {
                                     break;
                                 }                
-                                
+
+                                $bValidData = false;
+                                if ($bLogic) {
+                                    if ($Proj->isRepeatingForm($iEventId, $instrument)) {
+                                        $bValidData = REDCap::evaluateLogic($sLogic, $project_id, $record, $aData['redcap_event_name'], $aData['redcap_repeat_instance'], $instrument);
+                                    } else {
+                                        $bValidData = REDCap::evaluateLogic($sLogic, $project_id, $record, $aData['redcap_event_name']);
+                                    }
+                                } elseif (in_array($aData[$instrument.'_complete'],$aLoadStatus) && strlen($aData[$instrument.'_complete']) > 0) {
+                                    $bValidData = true;
+                                }
                                 // load data if status of form matches the project setting
-                                if (in_array($aData[$instrument.'_complete'],$aModConfig['load_status']) && strlen($aData[$instrument.'_complete']) > 0) {
+                                if ($bValidData) {
                                     $aLastGoodDate = DateTimeRC::datetimeConvert($aData[$aModConfig['visit_date']], 'ymd', substr($val_type, -3));
+                                    if ($Proj->isRepeatingForm($iEventId, $instrument)) {
+                                        $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
+                                    }
                                     unset($aData[$aModConfig['visit_date']]);
                                     unset($aData['redcap_event_name']);
                                     $aLastGood = $aData;
@@ -126,47 +219,54 @@ class LoadLastVisitData extends AbstractExternalModule {
                                 break;
                             }                
                         }
-
                         // special case: if repeating instances are active for current form and data exists for current form
                         // => load data of last instance of current form
-                        if (isset($aData['redcap_repeat_instance']) && $aData['redcap_event_name'] == $sEventName) {
-                          foreach($aVisit as $aData) {
-                              // break if current instance is reached
-                              if ($aData['redcap_repeat_instance'] >= $repeat_instance || strlen($aData['redcap_repeat_instance']) == 0) {
-                                  break;
-                              }                
-                              
-                              // load data if status of form matches the project setting
-                              if (in_array($aData[$instrument.'_complete'],$aModConfig['load_status']) && strlen($aData[$instrument.'_complete']) > 0) {
-                                  $aLastGoodDate = DateTimeRC::datetimeConvert($aData[$aModConfig['visit_date']], 'ymd', substr($val_type, -3));
-                                  $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
-                                  unset($aData[$aModConfig['visit_date']]);
-                                  unset($aData['redcap_event_name']);
-                                  $aLastGood = $aData;
-                              }
-                          }
+                        if ($Proj->isRepeatingForm($iEventId, $instrument) && $aData['redcap_event_name'] == $sEventName) {
+                          $aRepeatingInstancesData = $aVisit;
                         }
+                      
+                    } elseif ($Proj->isRepeatingForm($iEventId, $instrument)) {
+                        $aRepeatingInstancesData = json_decode(REDCap::getData($project_id, 'json', $record, $aVisitFields),true);
+                    }
 
-                    } else {
-                        $aDataDiag = json_decode(REDCap::getData($project_id, 'json', $record, $aVisitFields),true);
+                    if (count($aRepeatingInstancesData) > 0) {
                         $aVisit = array();
-                        foreach($aDataDiag as $aTmp) {
-                            if (strlen($aTmp['redcap_repeat_instance']) > 0) {
-                                $aVisit[$aTmp['redcap_repeat_instance']] = $aTmp;
-                            }
+                        foreach($aRepeatingInstancesData as $aTmp) {
+                            if ($aTmp['redcap_repeat_instance'] >= $repeat_instance || strlen($aTmp['redcap_repeat_instance']) == 0) {
+                                continue;
+                            }                
+                            $aVisit[$aTmp['redcap_repeat_instance']] = $aTmp;
                         }
-                        // sort by date (ascending)
+                        // sort by instance (ascending)
                         ksort($aVisit, SORT_NUMERIC);
 
-                        foreach($aVisit as $aData) {
-                            // break if current instance is reached
-                            if ($aData['redcap_repeat_instance'] >= $repeat_instance || strlen($aData['redcap_repeat_instance']) == 0) {
-                                break;
-                            }                
+                        $aVisit2 = array();
+                        // extract the last visit
+                        if (!$bLoadAllPreviousEvents) {
+                            $aVisit2[] = array_pop($aVisit);
+                        } else {
+                            $aVisit2 = $aVisit;
+                        }
+                        unset($aVisit);
+
+                        foreach($aVisit2 as $aData) {
+
+                            $bValidData = false;
+                            if ($bLogic) {
+                                $bValidData = REDCap::evaluateLogic($sLogic, $project_id, $record, $aData['redcap_event_name'], $aData['redcap_repeat_instance'], $instrument);
+                            } elseif (in_array($aData[$instrument.'_complete'],$aLoadStatus) && strlen($aData[$instrument.'_complete']) > 0) {
+                                $bValidData = true;
+                            }
                             
                             // load data if status of form matches the project setting
-                            if (in_array($aData[$instrument.'_complete'],$aModConfig['load_status']) && strlen($aData[$instrument.'_complete']) > 0) {
-                                $aLastGoodDate = ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
+                            if ($bValidData) {
+                                $aLastGoodDate = '';
+                                if ($Proj->longitudinal) {
+                                    $aLastGoodDate = DateTimeRC::datetimeConvert($aData[$aModConfig['visit_date']], 'ymd', substr($val_type, -3));
+                                    unset($aData[$aModConfig['visit_date']]);
+                                    unset($aData['redcap_event_name']);
+                                }
+                                $aLastGoodDate .= ' ('.$lang['data_entry_278'].$aData['redcap_repeat_instance'].')';
                                 $aLastGood = $aData;
                             }
                         }
@@ -181,11 +281,12 @@ class LoadLastVisitData extends AbstractExternalModule {
                             $aData2['redcap_event_name'] = $sEventName; 
                         }
                         // add instance field if form has repeating instances
-                        if (isset($aData2['redcap_repeat_instance'])) {
+                        if ($Proj->isRepeatingForm($iEventId, $instrument)) {
                             $aData2['redcap_repeat_instance'] = $repeat_instance;
                         }
                         // set status to project setting "save_status"
-                        $aData2[$instrument.'_complete'] = $aModConfig['save_status'];
+                        $aData2[$instrument.'_complete'] = $iSaveStatus;
+
                         $data = json_encode(array($aData2));
                         // save data
                         REDCap::saveData($project_id, 'json', $data, 'overwrite', 'YMD', 'flat', $group_id, true);
