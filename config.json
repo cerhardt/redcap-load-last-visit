@@ -12,6 +12,7 @@
 	],
 
 	"permissions": [
+		"redcap_survey_page_top",
 		"hook_data_entry_form_top",
 		"select_data",
 		"update_data"

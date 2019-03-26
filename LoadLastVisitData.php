@@ -10,7 +10,18 @@ use \DateTimeRC as DateTimeRC;
 
 class LoadLastVisitData extends AbstractExternalModule {
 
+    function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
+        $bPrefilled = $this->loadData($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance);
+        if ($bPrefilled) {
+            redirect(APP_PATH_SURVEY_FULL."?s=".$survey_hash);
+        }
+    }
+    
     function hook_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+        $this->loadData($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance);
+    }
+    
+    private function loadData($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 
         if (isset($project_id)) {
             
@@ -20,11 +31,11 @@ class LoadLastVisitData extends AbstractExternalModule {
                 $record = $_GET['id'];
             }
             if (empty($record)) {
-                return;
+                return false;
             }               
             // load data only if user has edit permission for instrument / survey
             if ($user_rights['forms'][$instrument] != '1' && $user_rights['forms'][$instrument] != '3') {
-                return;
+                return false;
             }
             
             // load module configuration
@@ -95,7 +106,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                     
                     if ($Proj->longitudinal) {
                         $val_type = $Proj->metadata[$aModConfig['visit_date']]['element_validation_type'];
-                        if (substr($val_type, 0, 4) !== 'date') return;
+                        if (substr($val_type, 0, 4) !== 'date') return false;
                     }
                                         
                     //  all fields to load
@@ -129,7 +140,7 @@ class LoadLastVisitData extends AbstractExternalModule {
 
                         // return if record is empty
                         if (count($aDataDiag) == 0) {
-                            return;
+                            return false;
                         }
                         // assign events to visit dates
                         $aEventNameDate = array();
@@ -290,9 +301,11 @@ class LoadLastVisitData extends AbstractExternalModule {
                         $data = json_encode(array($aData2));
                         // save data
                         REDCap::saveData($project_id, 'json', $data, 'overwrite', 'YMD', 'flat', $group_id, true);
-                    
+
                         // show message that data was loaded from old visit
                         print ('<br /><div class="red">'.REDCap::escapeHtml($aModConfig['show_message']).'<br />'.$aLastGoodDate.'</div><br />');     
+                        
+                        return true;
                     }        
                 }
             }
