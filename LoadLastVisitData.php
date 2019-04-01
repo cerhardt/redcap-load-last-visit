@@ -13,7 +13,7 @@ class LoadLastVisitData extends AbstractExternalModule {
     function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
         $bPrefilled = $this->loadData($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance);
         if ($bPrefilled) {
-            redirect(APP_PATH_SURVEY_FULL."?s=".$survey_hash);
+            $this->createPassthruForm($project_id,$record,$instrument, $event_id);
         }
     }
     
