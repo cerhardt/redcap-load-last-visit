@@ -49,7 +49,7 @@ class LoadLastVisitData extends AbstractExternalModule {
             $aFormsToPreload = $aModConfig['form'];
             $bNewConfig = true;
             $bLoadAllPreviousEvents = true;
-            if ((!isset($aModConfig['form'][0]) || strlen($aModConfig['form'][0]) == 0) && count($aModConfig['forms']) > 0) {
+            if ((!isset($aModConfig['form'][0]) || strlen($aModConfig['form'][0]) == 0) && isset($aModConfig['forms'][0])) {
                 $aFormsToPreload = $aModConfig['forms'];
                 $bNewConfig = false;
             }
