@@ -21,6 +21,7 @@ Caution: Previous data is copied to the current event before you save the instru
   - The visit date for the current event must already be entered before you can pre-populate an empty instrument
 - Classic project:
   - Instruments to be pre-populated must be configured as repeatable instruments  
+- Caution: This module does not work with repeating events  
 
 ## Installation
 - Go to **Control Center > External Modules** and download the module from the repository

@@ -53,8 +53,8 @@ class LoadLastVisitData extends AbstractExternalModule {
                 $aFormsToPreload = $aModConfig['forms'];
                 $bNewConfig = false;
             }
-            
-            if (in_array($instrument,$aFormsToPreload)) {
+
+            if (is_array($aFormsToPreload) && in_array($instrument,$aFormsToPreload)) {
     		
                 // get status array for current record
                 $grid_form_status_temp = Records::getFormStatus($project_id,array($record));
