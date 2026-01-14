@@ -33,11 +33,14 @@ class LoadLastVisitData extends AbstractExternalModule {
             if (empty($record)) {
                 return false;
             }               
+
+            $all_rights = REDCap::getUserRights();
+            $rights = $all_rights[$user_rights['username']];
             // load data only if user has edit permission for instrument / survey
-            if ($user_rights['forms'][$instrument] != '1' && $user_rights['forms'][$instrument] != '3') {
+            if ($rights['forms'][$instrument] != '1' && $rights['forms'][$instrument] != '3') {
                 return false;
             }
-            
+
             // load module configuration
             $aModConfigRaw = $this->getProjectSettings($project_id);
             $aModConfig = array();
@@ -45,10 +48,18 @@ class LoadLastVisitData extends AbstractExternalModule {
                 $aModConfig[$sKey] = $aTmp['value'];
             }
 
+            if ($Proj->longitudinal) {
+                $val_type = $Proj->metadata[$aModConfig['visit_date']]['element_validation_type'];
+                if (substr($val_type, 0, 4) !== 'date') return false;
+            }
+
             // backward compatibility < v2
             $aFormsToPreload = $aModConfig['form'];
             $bNewConfig = true;
             $bLoadAllPreviousEvents = true;
+            $bUpdateInstrument = false;
+            $aCurrentInstrument = array();
+            
             if ((!isset($aModConfig['form'][0]) || strlen($aModConfig['form'][0]) == 0) && isset($aModConfig['forms'][0])) {
                 $aFormsToPreload = $aModConfig['forms'];
                 $bNewConfig = false;
@@ -56,6 +67,45 @@ class LoadLastVisitData extends AbstractExternalModule {
 
             if (is_array($aFormsToPreload) && in_array($instrument,$aFormsToPreload)) {
     		
+                // get settings for instrument
+                if ($bNewConfig) {
+                    foreach($aFormsToPreload as $iFormIdx => $sForm) {
+                        if ($sForm == $instrument) {
+                            if (strlen($aModConfig['form_logic'][$iFormIdx]) > 0) {
+                                $bLogic = true;
+                                $sLogic = $aModConfig['form_logic'][$iFormIdx];
+                            } else {
+                                $bLogic = false;
+                                if (strlen($aModConfig['load_status_form'][$iFormIdx][0]) > 0) {
+                                    $aLoadStatus = $aModConfig['load_status_form'][$iFormIdx];
+                                } elseif (isset($aModConfig['load_status'])) {
+                                    $aLoadStatus = $aModConfig['load_status'];
+                                }
+                            }
+                            if (strlen($aModConfig['load_all_events_form'][$iFormIdx][0]) > 0) {
+                                $bLoadAllPreviousEvents = $aModConfig['load_all_events_form'][$iFormIdx];
+                            } elseif (isset($aModConfig['load_all_events'])) {
+                                $bLoadAllPreviousEvents = $aModConfig['load_all_events'];
+                            } 
+                            if (strlen($aModConfig['save_status_form'][$iFormIdx]) > 0) {
+                                $iSaveStatus = $aModConfig['save_status_form'][$iFormIdx];
+                            } elseif (isset($aModConfig['save_status'])) { 
+                                $iSaveStatus = $aModConfig['save_status'];
+                            }
+                            if (strlen($aModConfig['update_form'][$iFormIdx]) > 0) {
+                                $bUpdateInstrument = $aModConfig['update_form'][$iFormIdx];
+                            } elseif (isset($aModConfig['update'])) { 
+                                $bUpdateInstrument = $aModConfig['update'];
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    $bLogic = false;
+                    $aLoadStatus = $aModConfig['load_status'];
+                    $iSaveStatus = $aModConfig['save_status'];
+                }                
+
                 // get status array for current record
                 $grid_form_status_temp = Records::getFormStatus($project_id,array($record));
                 $grid_form_status = $grid_form_status_temp[$record];
@@ -66,49 +116,15 @@ class LoadLastVisitData extends AbstractExternalModule {
                     $bLoadData = true;
                 }
 
+                // update instrument
+                if (isset($grid_form_status[$event_id][$instrument]) && strlen($grid_form_status[$event_id][$instrument][$repeat_instance]) > 0 && $bUpdateInstrument) {
+                    $bLoadData = true;
+                }
+
                 // load data only if status is empty
                 if ($bLoadData) {
                     $iEventId = $event_id;
         
-                    // get settings for instrument
-                    if ($bNewConfig) {
-                        foreach($aFormsToPreload as $iFormIdx => $sForm) {
-                            if ($sForm == $instrument) {
-                                if (strlen($aModConfig['form_logic'][$iFormIdx]) > 0) {
-                                    $bLogic = true;
-                                    $sLogic = $aModConfig['form_logic'][$iFormIdx];
-                                } else {
-                                    $bLogic = false;
-                                    if (strlen($aModConfig['load_status_form'][$iFormIdx][0]) > 0) {
-                                        $aLoadStatus = $aModConfig['load_status_form'][$iFormIdx];
-                                    } elseif (isset($aModConfig['load_status'])) {
-                                        $aLoadStatus = $aModConfig['load_status'];
-                                    }
-                                }
-                                if (strlen($aModConfig['load_all_events_form'][$iFormIdx][0]) > 0) {
-                                    $bLoadAllPreviousEvents = $aModConfig['load_all_events_form'][$iFormIdx];
-                                } elseif (isset($aModConfig['load_all_events'])) {
-                                    $bLoadAllPreviousEvents = $aModConfig['load_all_events'];
-                                } 
-                                if (strlen($aModConfig['save_status_form'][$iFormIdx]) > 0) {
-                                    $iSaveStatus = $aModConfig['save_status_form'][$iFormIdx];
-                                } elseif (isset($aModConfig['save_status'])) { 
-                                    $iSaveStatus = $aModConfig['save_status'];
-                                }
-                                break;
-                            }
-                        }
-                    } else {
-                        $bLogic = false;
-                        $aLoadStatus = $aModConfig['load_status'];
-                        $iSaveStatus = $aModConfig['save_status'];
-                    }                
-                    
-                    if ($Proj->longitudinal) {
-                        $val_type = $Proj->metadata[$aModConfig['visit_date']]['element_validation_type'];
-                        if (substr($val_type, 0, 4) !== 'date') return false;
-                    }
-                                        
                     //  all fields to load
                     $aVisitFields = array();
                     // record_id
@@ -175,6 +191,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                             }
                             // break if current event is reached
                             if ($aData['redcap_event_name'] == $sEventName) {
+                                $aCurrentInstrument = $aData;
                                 break;
                             }                
                             $sLastEvent = $aData['redcap_event_name'];
@@ -195,12 +212,14 @@ class LoadLastVisitData extends AbstractExternalModule {
                         }
                         unset($aPreviousEvents);
 
+
                         foreach($aPreviousEvents2 as $sVisitDate => $aVisit) {
                             foreach($aVisit as $aData) {
                                 $iEventId = REDCap::getEventIdFromUniqueEvent($aData['redcap_event_name']);
 
                                 // break if current event is reached
                                 if ($aData['redcap_event_name'] == $sEventName) {
+                                    $aCurrentInstrument = $aData;
                                     break;
                                 }                
 
@@ -227,6 +246,7 @@ class LoadLastVisitData extends AbstractExternalModule {
                             }
                             // break outer loop if current event is reached
                             if ($aData['redcap_event_name'] == $sEventName) {
+                                $aCurrentInstrument = $aData;
                                 break;
                             }                
                         }
@@ -282,11 +302,23 @@ class LoadLastVisitData extends AbstractExternalModule {
                             }
                         }
                     }
-                    
+
                     // save data if array is filled with old data
                     if (count($aLastGood) > 0) {
-                    
+
                         $aData2 = $aLastGood;
+                        
+                        // update instrument
+                        if ($bUpdateInstrument && count($aCurrentInstrument) > 0) {
+                            $aCurr = array();
+                            foreach($aCurrentInstrument as $key => $val) {
+                                if (isset($aLastGood[$key]) && strlen($aLastGood[$key]) > 0 && strlen($val) == 0) {
+                                    $aCurr[$key] = $aLastGood[$key];
+                                }
+                            }
+                            $aData2 = $aCurr;
+                        }
+
                         $aData2[REDCap::getRecordIdField()] = $record;
                         if ($Proj->longitudinal) {
                             $aData2['redcap_event_name'] = $sEventName; 

@@ -35,6 +35,7 @@ Caution: Previous data is copied to the current event before you save the instru
   -  Select one or more states for earlier data (e.g. if you want to load previous data only if the instrument is "complete", then choose "complete") 
   -  Select the scope of previous events/instances (all / just the last one) (required)
   -  Select state for pre-populated instruments 
+  -  Check if you want to update instruments 
   -  Type message that appears above prefilled instrument (e.g. a warning that the data was copied) (required)
 - Add instruments and instrument settings:
   -  Select instrument to be pre-populated (required)
@@ -42,6 +43,7 @@ Caution: Previous data is copied to the current event before you save the instru
   -  Option 2: Type a custom filter (same syntax like branching logic)  
   -  Select the scope of previous events/instances if you want to override the global setting
   -  Select state for pre-populated instruments if you want to override the global setting
+  -  Check if you want to update instruments (override global setting)
 
 
 ## Example 1 (longitudinal project)

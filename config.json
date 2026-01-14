@@ -68,6 +68,12 @@
 			]
 		},
 		{
+			"key": "update",
+			"name": "Global: update existing instrument",
+			"required": false,
+			"type": "checkbox"
+		},
+		{
 			"key": "show_message",
 			"name": "Global: message above pre-populated instruments",
 			"required": true,
@@ -79,53 +85,59 @@
 			"required": true,
 			"repeatable": true,
 			"type": "sub_settings",
-      "sub_settings":[
-          {
-             "key": "form",
-             "name": "Instrument",
-             "required": true,
-             "type": "form-list"
-          },
-          {
-             "key": "load_status_form",
-        			"name": "Instrument: option 1: load previous data only if event/instance matches these states",
+            "sub_settings":[
+              {
+                 "key": "form",
+                 "name": "Instrument",
+                 "required": true,
+                 "type": "form-list"
+              },
+              {
+                 "key": "load_status_form",
+            			"name": "Instrument: option 1: load previous data only if event/instance matches these states",
+            			"required": false,
+            			"repeatable": true,
+            			"type": "dropdown",
+            			"choices": [
+            				{ "value": "0", "name": "Incomplete" },
+            				{ "value": "1", "name": "Unverified" },
+            				{ "value": "2", "name": "Complete" }
+            			]
+              },
+          		{
+          			"key": "form_logic",
+          			"name": "Instrument: option 2: advanced instrument logic",
+          			"required": false,
+          			"type": "text"
+          		},
+          		{
+          			"key": "load_all_events_form",
+          			"name": "Instrument: load all previous events/instances or just the last one",
+          			"required": false,
+          			"type": "dropdown",
+          			"choices": [
+          				{ "value": "1", "name": "all previous events/instances" },
+          				{ "value": "0", "name": "just the last one" }
+          			]
+          		},
+          		{
+          			"key": "save_status_form",
+          			"name": "Instrument: state for pre-populated instrument",
+          			"required": false,
+          			"type": "dropdown",
+          			"choices": [
+          				{ "value": "0", "name": "Incomplete" },
+          				{ "value": "1", "name": "Unverified" },
+          				{ "value": "2", "name": "Complete" }
+          			]
+          		},
+        		{
+        			"key": "update_form",
+        			"name": "Instrument: update existing",
         			"required": false,
-        			"repeatable": true,
-        			"type": "dropdown",
-        			"choices": [
-        				{ "value": "0", "name": "Incomplete" },
-        				{ "value": "1", "name": "Unverified" },
-        				{ "value": "2", "name": "Complete" }
-        			]
-          },
-      		{
-      			"key": "form_logic",
-      			"name": "Instrument: option 2: advanced instrument logic",
-      			"required": false,
-      			"type": "text"
-      		},
-      		{
-      			"key": "load_all_events_form",
-      			"name": "Instrument: load all previous events/instances or just the last one",
-      			"required": false,
-      			"type": "dropdown",
-      			"choices": [
-      				{ "value": "1", "name": "all previous events/instances" },
-      				{ "value": "0", "name": "just the last one" }
-      			]
-      		},
-      		{
-      			"key": "save_status_form",
-      			"name": "Instrument: state for pre-populated instrument",
-      			"required": false,
-      			"type": "dropdown",
-      			"choices": [
-      				{ "value": "0", "name": "Incomplete" },
-      				{ "value": "1", "name": "Unverified" },
-      				{ "value": "2", "name": "Complete" }
-      			]
-      		}
-       ]
-    }
+        			"type": "checkbox"
+        		}
+           ]
+        }
 	]
 }
