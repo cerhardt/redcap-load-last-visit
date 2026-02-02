@@ -37,8 +37,10 @@ class LoadLastVisitData extends AbstractExternalModule {
             $all_rights = REDCap::getUserRights();
             $rights = $all_rights[$user_rights['username']];
             // load data only if user has edit permission for instrument / survey
-            if ($rights['forms'][$instrument] != '1' && $rights['forms'][$instrument] != '3') {
-                return false;
+            if (!defined('SUPER_USER') || !SUPER_USER) {
+                if ($rights['forms'][$instrument] != '1' && $rights['forms'][$instrument] != '3') {
+                    return false;
+                }
             }
 
             // load module configuration
