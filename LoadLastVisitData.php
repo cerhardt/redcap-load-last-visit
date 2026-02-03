@@ -38,7 +38,12 @@ class LoadLastVisitData extends AbstractExternalModule {
             $rights = $all_rights[$user_rights['username']];
             // load data only if user has edit permission for instrument / survey
             if (!defined('SUPER_USER') || !SUPER_USER) {
-                if ($rights['forms'][$instrument] != '1' && $rights['forms'][$instrument] != '3') {
+                $formperm = intval($rights['forms'][$instrument]);
+                if ($formperm < 128) {
+                    if ($rights['forms'][$instrument] != '1' && $rights['forms'][$instrument] != '3') {
+                        return false;
+                    }
+                } elseif ($formperm < 130) {
                     return false;
                 }
             }
